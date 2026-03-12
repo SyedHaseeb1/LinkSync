@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:linksync/core/theme/app_theme.dart';
 import 'package:linksync/core/constants/constants.dart';
+import 'package:linksync/ui/screens/devices_screen.dart';
+import 'package:linksync/ui/screens/other_screens.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,7 @@ class LinkSyncApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppConstants.appName,
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const MainScreen(),
     );
@@ -35,16 +38,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  final List<Widget> _screens = const [
+    DevicesScreen(),
+    TransfersScreen(),
+    SettingsScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          DevicesScreen(),
-          TransfersScreen(),
-          SettingsScreen(),
-        ],
+        children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -66,23 +71,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-}
-
-// Placeholder Screens
-class DevicesScreen extends StatelessWidget {
-  const DevicesScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Devices Screen')));
-}
-
-class TransfersScreen extends StatelessWidget {
-  const TransfersScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Transfers Screen')));
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Settings Screen')));
 }
