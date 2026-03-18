@@ -9,6 +9,8 @@ import 'package:linksync/features/discovery/models/device.dart';
 import 'package:linksync/features/discovery/services/qr_service.dart';
 import 'dart:io';
 
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 class ReceiveScreen extends ConsumerStatefulWidget {
   const ReceiveScreen({super.key});
 
@@ -16,7 +18,8 @@ class ReceiveScreen extends ConsumerStatefulWidget {
   ConsumerState<ReceiveScreen> createState() => _ReceiveScreenState();
 }
 
-class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTickerProviderStateMixin {
+class _ReceiveScreenState extends ConsumerState<ReceiveScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   String _qrPayload = '';
@@ -25,11 +28,12 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
   @override
   void initState() {
     super.initState();
+    WakelockPlus.enable();
     _pulseController = AnimationController(
-       vsync: this,
-       duration: const Duration(seconds: 2),
+      vsync: this,
+      duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -40,21 +44,22 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
   Future<void> _initializeReceiver() async {
     final settings = await ref.read(settingsServiceProvider.future);
     _pin = settings['pin'] ?? '';
-    
+
     ref.read(isSenderProvider.notifier).setSender(false);
-    
+
     // Start mDNS Broadcast
-    await ref.read(discoveryServiceProvider.notifier).startBroadcast(
-      settings['name']!,
-      settings['id']!,
-    );
+    await ref
+        .read(discoveryServiceProvider.notifier)
+        .startBroadcast(settings['name']!, settings['id']!);
     // Start TCP Server
     await ref.read(socketServiceProvider.notifier).startServer();
-    
+
     // Compute Local IP for QR Code
     String localIp = '';
     try {
-      final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+      );
       for (final interface in interfaces) {
         for (final addr in interface.addresses) {
           if (!addr.isLoopback) {
@@ -86,6 +91,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
   @override
   void dispose() {
     _pulseController.dispose();
+    WakelockPlus.disable();
     // Stop broadcast when leaving receive screen
     ref.read(discoveryServiceProvider.notifier).stopBroadcast();
     // Do NOT stopServer() here because it might be actively transferring in TransfersScreen
@@ -96,10 +102,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Receive Files'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Receive Files'), elevation: 0),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -121,19 +124,19 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
                 width: 250,
                 height: 250,
                 decoration: BoxDecoration(
-                   shape: BoxShape.circle,
-                   color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                 ),
                 child: Center(
                   child: _qrPayload.isEmpty
-                    ? const CircularProgressIndicator()
-                    : QrImageView(
-                        data: _qrPayload,
-                        version: QrVersions.auto,
-                        size: 200.0,
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                      ),
+                      ? const CircularProgressIndicator()
+                      : QrImageView(
+                          data: _qrPayload,
+                          version: QrVersions.auto,
+                          size: 200.0,
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                        ),
                 ),
               ),
             ),
@@ -146,7 +149,11 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> with SingleTicker
               ),
               child: Text(
                 'PIN Code: $_pin',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ],

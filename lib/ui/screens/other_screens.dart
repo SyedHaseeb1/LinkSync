@@ -328,14 +328,31 @@ class TransfersScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // 📄 FILE NAME
-                            Text(
-                              fileName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                            Row(
+                              children: [
+                                // 📄 File name takes remaining space
+                                Expanded(
+                                  child: Text(
+                                    fileName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+
+                                // ❌ Remove button
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 20),
+                                  onPressed: () {
+                                    ref
+                                        .read(transferQueueProvider.notifier)
+                                        .removeTask(task.id);
+                                  },
+                                ),
+                              ],
                             ),
 
                             const SizedBox(height: 4),

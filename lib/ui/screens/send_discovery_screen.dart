@@ -14,6 +14,8 @@ import 'package:linksync/ui/screens/other_screens.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
 
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 class SendDiscoveryScreen extends ConsumerStatefulWidget {
   final List<PlatformFile> files;
   const SendDiscoveryScreen({super.key, required this.files});
@@ -27,6 +29,7 @@ class _SendDiscoveryScreenState extends ConsumerState<SendDiscoveryScreen> {
   @override
   void initState() {
     super.initState();
+    WakelockPlus.enable();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
        ref.read(discoveryServiceProvider.notifier).startDiscovery();
     });
@@ -35,6 +38,7 @@ class _SendDiscoveryScreenState extends ConsumerState<SendDiscoveryScreen> {
   @override
   void dispose() {
     ref.read(discoveryServiceProvider.notifier).stopDiscovery();
+    WakelockPlus.disable();
     super.dispose();
   }
 

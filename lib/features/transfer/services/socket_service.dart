@@ -333,9 +333,19 @@ class SocketService extends _$SocketService {
       }
 
       await socket.flush();
-      ref
-          .read(transferQueueProvider.notifier)
-          .updateProgress(taskId, 0.0, SyncTaskStatus.failed, 0.0);
+
+      // IMPORTANT: Wait for the receiver to send 'COMPLETE' before closing.
+      // This ensures the file is fully stored on the receiver side.
+      try {
+        await completer.future.timeout(const Duration(seconds: 30));
+        print('Transfer confirmed by receiver: $taskId');
+      } catch (e) {
+        print('Timeout or error waiting for COMPLETE: $e');
+        ref
+            .read(transferQueueProvider.notifier)
+            .updateProgress(taskId, 0.0, SyncTaskStatus.failed, 0.0);
+        rethrow;
+      }
     } finally {
       await socket?.close();
     }
