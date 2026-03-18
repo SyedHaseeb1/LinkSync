@@ -41,7 +41,7 @@ final class DiscoveryServiceProvider
   }
 }
 
-String _$discoveryServiceHash() => r'62c29c2463a99e1c6b6c226ed34017c95cd34995';
+String _$discoveryServiceHash() => r'b26872b5992981031e659ac1611dda14ed54343c';
 
 abstract class _$DiscoveryService extends $Notifier<List<Device>> {
   List<Device> build();

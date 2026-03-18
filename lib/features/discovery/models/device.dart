@@ -4,6 +4,7 @@ class Device {
   final String os;
   final String ip;
   final int port;
+  final String? pin;
   final bool isMe;
 
   Device({
@@ -12,6 +13,7 @@ class Device {
     required this.os,
     required this.ip,
     required this.port,
+    this.pin,
     this.isMe = false,
   });
 
@@ -21,6 +23,7 @@ class Device {
     'os': os,
     'ip': ip,
     'port': port,
+    if (pin != null) 'pin': pin,
   };
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
@@ -29,6 +32,7 @@ class Device {
     os: json['os'],
     ip: json['ip'],
     port: json['port'],
+    pin: json['pin'],
   );
 
   @override

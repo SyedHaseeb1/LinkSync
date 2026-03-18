@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'transfer_queue.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class TransferQueue extends _$TransferQueue {
   final _db = DatabaseRepository();
 
@@ -19,12 +19,12 @@ class TransferQueue extends _$TransferQueue {
     state = AsyncData([task, ...?state.value]);
   }
 
-  Future<void> updateProgress(String id, double progress, SyncTaskStatus status) async {
-    await _db.updateTaskProgress(id, progress, status);
+  Future<void> updateProgress(String id, double progress, SyncTaskStatus status, [double speed = 0.0]) async {
+    await _db.updateTaskProgress(id, progress, status, speed);
     if (state.hasValue) {
       state = AsyncData(state.value!.map((t) {
         if (t.id == id) {
-          return t.copyWith(progress: progress, status: status);
+          return t.copyWith(progress: progress, status: status, speed: speed);
         }
         return t;
       }).toList());

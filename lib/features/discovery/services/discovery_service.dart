@@ -22,7 +22,9 @@ class DiscoveryService extends _$DiscoveryService {
   }
 
   Future<void> startBroadcast(String deviceName, String deviceId) async {
-    BonsoirService service = BonsoirService(
+    await stopBroadcast();
+
+    final service = BonsoirService(
       name: deviceName,
       type: AppConstants.mDnsType,
       port: int.parse(AppConstants.defaultPort),
@@ -33,46 +35,80 @@ class DiscoveryService extends _$DiscoveryService {
     );
 
     _broadcast = BonsoirBroadcast(service: service);
+
+    // Ensure the broadcast instance is initialized for Linux/Android
     await _broadcast!.ready;
     await _broadcast!.start();
   }
 
   Future<void> stopBroadcast() async {
-    await _broadcast?.stop();
-    _broadcast = null;
+    if (_broadcast != null) {
+      await _broadcast!.stop();
+      _broadcast = null;
+    }
   }
 
   Future<void> startDiscovery() async {
+    if (_discovery != null) return;
+
     _discovery = BonsoirDiscovery(type: AppConstants.mDnsType);
+
+    // Mandatory initialization before calling start
     await _discovery!.ready;
 
-    _discovery!.eventStream!.listen((event) {
-      if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved ||
-          event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-        if (event.service == null || event.service!.attributes['id'] == null) return;
-        
-        final device = Device(
-          id: event.service!.attributes['id']!,
-          name: event.service!.name,
-          os: event.service!.attributes['os'] ?? 'Unknown',
-          ip: (event.service as ResolvedBonsoirService).host ?? 'Unknown',
-          port: event.service!.port,
-        );
-
-        if (!state.any((d) => d.id == device.id)) {
-          state = [...state, device];
-        }
-      } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceLost) {
-        state = state.where((d) => d.name != event.service?.name).toList();
-      }
-    });
-
+    _discovery!.eventStream?.listen(_handleDiscoveryEvent);
     await _discovery!.start();
   }
 
+  void _handleDiscoveryEvent(BonsoirDiscoveryEvent event) {
+    if (event.service == null) return;
+    final service = event.service!;
+
+    switch (event.type) {
+      case BonsoirDiscoveryEventType.discoveryServiceFound:
+      // Found is just the announcement; resolve gets the actual IP and TXT data
+        service.resolve(_discovery!.serviceResolver);
+        break;
+
+      case BonsoirDiscoveryEventType.discoveryServiceResolved:
+      // Attributes (id/os) and host (IP) are now populated
+        if (service.attributes.containsKey('id')) {
+          final String? hostAddress = (service is ResolvedBonsoirService)
+              ? service.host
+              : null;
+
+          final device = Device(
+            id: service.attributes['id']!,
+            name: service.name,
+            os: service.attributes['os'] ?? 'Unknown',
+            ip: hostAddress ?? 'Unknown',
+            port: service.port,
+          );
+
+          state = [
+            ...state.where((d) => d.id != device.id),
+            device,
+          ];
+        }
+        break;
+
+      case BonsoirDiscoveryEventType.discoveryServiceLost:
+        state = state.where((d) => d.name != service.name).toList();
+        break;
+
+      case BonsoirDiscoveryEventType.discoveryServiceResolveFailed:
+      // Handle failed resolution if necessary
+        break;
+
+      default:
+        break;
+    }
+  }
+
   Future<void> stopDiscovery() async {
-    await _discovery?.stop();
-    _discovery = null;
-    state = [];
+    if (_discovery != null) {
+      await _discovery!.stop();
+      _discovery = null;
+    }
   }
 }

@@ -15,8 +15,13 @@ class DatabaseRepository {
     String path = join(await getDatabasesPath(), 'linksync.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE sync_tasks ADD COLUMN speed REAL DEFAULT 0.0');
+        }
+      },
     );
   }
 
@@ -27,9 +32,11 @@ class DatabaseRepository {
         type INTEGER,
         sourceDeviceId TEXT,
         targetDeviceId TEXT,
+        targetDeviceName TEXT,
         filePath TEXT,
         fileSize INTEGER,
         progress REAL,
+        speed REAL,
         status INTEGER,
         createdAt TEXT
       )
@@ -58,13 +65,14 @@ class DatabaseRepository {
     return List.generate(maps.length, (i) => SyncTask.fromMap(maps[i]));
   }
 
-  Future<void> updateTaskProgress(String id, double progress, SyncTaskStatus status) async {
+  Future<void> updateTaskProgress(String id, double progress, SyncTaskStatus status, double speed) async {
     final db = await database;
     await db.update(
       'sync_tasks',
       {
         'progress': progress,
         'status': status.index,
+        'speed': speed,
       },
       where: 'id = ?',
       whereArgs: [id],
